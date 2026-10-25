@@ -6,7 +6,9 @@ import morgan from 'morgan';
 import mongoose from 'mongoose';
 import { env } from './config/env.js';
 import { noStore } from './middleware/noStore.js';
+import { csrfGuard } from './middleware/csrfGuard.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { authRouter } from './routes/auth.routes.js';
 import { ApiError } from './utils/ApiError.js';
 
 export const app = express();
@@ -21,11 +23,11 @@ app.use(helmet());
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (e.g. mobile apps, curl, tests)
+      // Allow requests with no origin (e.g. mobile apps, curl, tests) or matching origins
       if (!origin || env.CORS_ORIGINS.includes(origin)) {
         return callback(null, true);
       }
-      return callback(new ApiError(403, 'CORS_ERROR', 'Origin not allowed by CORS'));
+      return callback(null, false);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
@@ -57,8 +59,11 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Apply no-store cache control to all /api endpoints
-app.use('/api', noStore);
+// Apply no-store cache control and CSRF guard to all /api endpoints
+app.use('/api', noStore, csrfGuard);
+
+// Route modules
+app.use('/api/auth', authRouter);
 
 // 404 Handler for undefined routes
 app.use((req, res, next) => {
