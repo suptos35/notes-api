@@ -49,6 +49,17 @@ if (env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 
+// Root endpoint for reviewers accessing the base URL directly
+app.get('/', (req, res) => {
+  res.status(200).json({
+    name: 'Secure Note-Taking Application API',
+    status: 'operational',
+    health: '/health',
+    api: '/api',
+    documentation: 'https://github.com/suptos35/notes-api#readme'
+  });
+});
+
 // Health check endpoint for Render warmup and uptime monitoring
 app.get('/health', (req, res) => {
   res.status(200).json({

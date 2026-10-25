@@ -1,6 +1,6 @@
 # Secure Note-Taking Application API (`notes-api`)
 
-![CI](https://github.com/suptos35/notes-api/actions/workflows/ci.yml/badge.svg)
+[![CI](https://github.com/suptos35/notes-api/actions/workflows/ci.yml/badge.svg)](https://github.com/suptos35/notes-api/actions/workflows/ci.yml)
 
 A production-grade, secure REST API engineered for a multi-tenant Note-Taking platform featuring role-based access control (User and Admin), strict MongoDB indexing with a 4-custom-index budget, and optimized aggregation pipelines.
 
@@ -137,33 +137,56 @@ Post: _id_, author_1__id_-1
 
 ================ QUERY EXPLAIN PLANS ================
 Query: 1. Login by email (users {email:1})
- - Winning Stage: IXSCAN
+ - Winning Stage: EXPRESS_IXSCAN
  - Index Name: email_1
  - totalDocsExamined: 1, nReturned: 1
 
 Query: 2. Get user by id (default _id)
- - Winning Stage: IDHACK
+ - Winning Stage: EXPRESS_IXSCAN
+ - Index Name: _id_
  - totalDocsExamined: 1, nReturned: 1
 
 Query: 3. Admin list users (keyset cursor, default _id)
- - Winning Stage: FETCH
- - totalDocsExamined: 1, nReturned: 1
+ - Winning Stage: LIMIT (FETCH)
+ - Index Name: _id_
+ - totalDocsExamined: 10, nReturned: 10
 
 Query: 4. Get note by id with owner check (default _id)
- - Winning Stage: IXSCAN (_id_)
+ - Winning Stage: FETCH (IXSCAN)
+ - Index Name: _id_
+ - totalDocsExamined: 0, nReturned: 0
 
 Query: 5. User lists own notes (notes {owner:1,_id:-1})
- - Winning Stage: FETCH (via compound index owner_1__id_-1)
- - totalDocsExamined: 1, nReturned: 1
+ - Winning Stage: LIMIT (FETCH)
+ - Index Name: owner_1__id_-1
+ - totalDocsExamined: 8, nReturned: 8
+
+Query: 6. Admin lists all notes (default _id)
+ - Winning Stage: LIMIT (FETCH)
+ - Index Name: _id_
+ - totalDocsExamined: 10, nReturned: 10
 
 Query: 7. Admin filters notes by owner (notes {owner:1,_id:-1})
- - Winning Stage: FETCH (via compound index owner_1__id_-1)
+ - Winning Stage: LIMIT (FETCH)
+ - Index Name: owner_1__id_-1
+ - totalDocsExamined: 8, nReturned: 8
+
+Query: 8. Public feed of all posts (default _id)
+ - Winning Stage: LIMIT (FETCH)
+ - Index Name: _id_
+ - totalDocsExamined: 10, nReturned: 10
 
 Query: 9. Scenario 1: Group by interests (users {interests:1})
- - Leading Cursor Stage: FETCH / IXSCAN on interests_1
+ - Type: Aggregation Pipeline
+ - Leading Cursor Stage: FETCH (inputStage: IXSCAN on multikey interests_1)
+ - Index Used: interests_1
+ - totalDocsExamined: 41, nReturned: 41
 
 Query: 10. Scenario 2: User posts via $lookup (posts {author:1,_id:-1})
- - Leading Cursor Stage: IDHACK on user _id, foreign lookup uses author_1__id_-1
+ - Type: Aggregation Pipeline
+ - Leading Cursor Stage: EXPRESS_IXSCAN on user _id
+ - Sub-Pipeline: author equality match and _id sort uses author_1__id_-1
+ - totalDocsExamined: 1, nReturned: 1
 ```
 
 ---
@@ -189,6 +212,7 @@ Base Path: `/api`. All responses JSON.
 
 | Method | Path | Auth | Description |
 | :--- | :--- | :--- | :--- |
+| `GET` | `/` | None | Service info & documentation links |
 | `GET` | `/health` | None | Service health check (`{ ok: true, db: true }`) |
 | `POST` | `/api/auth/register` | None | Register new user (always role `user`) & sets cookie |
 | `POST` | `/api/auth/login` | None | Authenticate with email & password & sets cookie |

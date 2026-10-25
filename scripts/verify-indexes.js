@@ -47,26 +47,20 @@ async function verifyIndexes() {
   console.log('\n================ QUERY EXPLAIN PLANS ================');
   const dummyId = new mongoose.Types.ObjectId();
 
-  // Create minimal sample data to make query planner realistic
-  const sampleUser = await User.create({
-    name: 'Sample Query User',
-    email: 'user1@example.com',
-    passwordHash: 'dummy',
-    role: 'user',
-    interests: ['chess', 'coding']
-  });
-
-  await Note.create({
-    owner: sampleUser._id,
-    title: 'Sample Note',
-    content: 'Content'
-  });
-
-  await Post.create({
-    author: sampleUser._id,
-    title: 'Sample Post',
-    content: 'Post Content'
-  });
+  // Use existing user from database or create one if empty
+  let sampleUser = await User.findOne({ email: 'user1@example.com' });
+  if (!sampleUser) {
+    sampleUser = await User.findOne({});
+  }
+  if (!sampleUser) {
+    sampleUser = await User.create({
+      name: 'Sample Query User',
+      email: 'verify_user@example.com',
+      passwordHash: 'dummy',
+      role: 'user',
+      interests: ['chess', 'coding']
+    });
+  }
 
   const testUserId = sampleUser._id;
 
@@ -106,41 +100,55 @@ async function verifyIndexes() {
     {
       name: '9. Scenario 1: Group by interests (users {interests:1})',
       fn: () =>
-        User.aggregate([
-          { $match: { interests: { $gt: '' } } },
-          { $unwind: '$interests' },
-          {
-            $group: {
-              _id: '$interests',
-              count: { $sum: 1 },
-              users: { $push: { _id: '$_id', name: '$name' } }
-            }
+        mongoose.connection.db.command({
+          explain: {
+            aggregate: User.collection.name,
+            pipeline: [
+              { $match: { interests: { $gt: '' } } },
+              { $unwind: '$interests' },
+              {
+                $group: {
+                  _id: '$interests',
+                  count: { $sum: 1 },
+                  users: { $push: { _id: '$_id', name: '$name' } }
+                }
+              },
+              { $sort: { _id: 1 } },
+              {
+                $facet: {
+                  groups: [{ $skip: 0 }, { $limit: 10 }],
+                  total: [{ $count: 'n' }]
+                }
+              }
+            ],
+            cursor: {}
           },
-          { $sort: { _id: 1 } },
-          {
-            $facet: {
-              groups: [{ $skip: 0 }, { $limit: 10 }],
-              total: [{ $count: 'n' }]
-            }
-          }
-        ]).explain('executionStats')
+          verbosity: 'executionStats'
+        })
     },
     {
       name: '10. Scenario 2: User posts via $lookup (posts {author:1,_id:-1})',
       fn: () =>
-        User.aggregate([
-          { $match: { _id: testUserId } },
-          { $project: { name: 1 } },
-          {
-            $lookup: {
-              from: Post.collection.name,
-              localField: '_id',
-              foreignField: 'author',
-              pipeline: [{ $sort: { _id: -1 } }, { $limit: 11 }],
-              as: 'posts'
-            }
-          }
-        ]).explain('executionStats')
+        mongoose.connection.db.command({
+          explain: {
+            aggregate: User.collection.name,
+            pipeline: [
+              { $match: { _id: testUserId } },
+              { $project: { name: 1 } },
+              {
+                $lookup: {
+                  from: Post.collection.name,
+                  localField: '_id',
+                  foreignField: 'author',
+                  pipeline: [{ $sort: { _id: -1 } }, { $limit: 11 }],
+                  as: 'posts'
+                }
+              }
+            ],
+            cursor: {}
+          },
+          verbosity: 'executionStats'
+        })
     }
   ];
 
@@ -167,10 +175,11 @@ async function verifyIndexes() {
         // Find explain
         const stats = explain.executionStats || {};
         const winningPlan = explain.queryPlanner?.winningPlan;
-        const stageName = winningPlan?.inputStage?.stage || winningPlan?.stage;
-        const indexName = winningPlan?.inputStage?.indexName || winningPlan?.indexName;
-        console.log(` - Winning Stage: ${stageName}`);
-        console.log(` - Index Name: ${indexName || 'N/A'}`);
+        const stageName = winningPlan?.stage || 'N/A';
+        const inputStage = winningPlan?.inputStage;
+        const indexName = inputStage?.indexName || winningPlan?.indexName || inputStage?.inputStage?.indexName;
+        console.log(` - Winning Stage: ${stageName}${inputStage ? ` (${inputStage.stage})` : ''}`);
+        console.log(` - Index Name: ${indexName || 'N/A (walks _id index)'}`);
         console.log(` - totalDocsExamined: ${stats.totalDocsExamined ?? 0}`);
         console.log(` - nReturned: ${stats.nReturned ?? 0}`);
       }
