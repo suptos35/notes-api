@@ -11,6 +11,8 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { authRouter } from './routes/auth.routes.js';
 import { usersRouter } from './routes/users.routes.js';
 import { notesRouter } from './routes/notes.routes.js';
+import { postsRouter } from './routes/posts.routes.js';
+import { interestsRouter } from './routes/interests.routes.js';
 import { adminRouter } from './routes/admin.routes.js';
 import { ApiError } from './utils/ApiError.js';
 
@@ -69,6 +71,8 @@ app.use('/api', noStore, csrfGuard);
 app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/notes', notesRouter);
+app.use('/api/posts', postsRouter);
+app.use('/api/interests', interestsRouter);
 app.use('/api/admin', adminRouter);
 
 // 404 Handler for undefined routes
