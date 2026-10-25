@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "node --test test/*.test.js",
+    "test": "NODE_ENV=test MONGODB_URI=mongodb://localhost:27017/test-db JWT_SECRET=super_secret_jwt_key_at_least_32_chars_long!! node --test test/*.test.js",
     "seed": "node scripts/seed.js",
     "verify": "node scripts/verify-indexes.js"
   },

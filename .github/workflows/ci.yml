@@ -23,3 +23,7 @@ jobs:
 
       - name: Run tests
         run: npm test
+        env:
+          NODE_ENV: test
+          MONGODB_URI: mongodb://localhost:27017/test
+          JWT_SECRET: super_secret_jwt_key_at_least_32_chars_long!!
