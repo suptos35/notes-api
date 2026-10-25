@@ -11,6 +11,7 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { authRouter } from './routes/auth.routes.js';
 import { usersRouter } from './routes/users.routes.js';
 import { notesRouter } from './routes/notes.routes.js';
+import { adminRouter } from './routes/admin.routes.js';
 import { ApiError } from './utils/ApiError.js';
 
 export const app = express();
@@ -68,6 +69,7 @@ app.use('/api', noStore, csrfGuard);
 app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/notes', notesRouter);
+app.use('/api/admin', adminRouter);
 
 // 404 Handler for undefined routes
 app.use((req, res, next) => {
