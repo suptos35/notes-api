@@ -1,6 +1,6 @@
 # Secure Note-Taking Application API (`notes-api`)
 
-![CI](https://github.com/placeholder-user/notes-api/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/suptos35/notes-api/actions/workflows/ci.yml/badge.svg)
 
 A production-grade, secure REST API engineered for a multi-tenant Note-Taking platform featuring role-based access control (User and Admin), strict MongoDB indexing with a 4-custom-index budget, and optimized aggregation pipelines.
 
