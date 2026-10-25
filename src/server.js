@@ -2,6 +2,9 @@ import mongoose from 'mongoose';
 import { app } from './app.js';
 import { env } from './config/env.js';
 import { connectDB } from './config/db.js';
+import { User } from './models/User.js';
+import { Note } from './models/Note.js';
+import { Post } from './models/Post.js';
 
 let server;
 
@@ -10,6 +13,11 @@ async function startServer() {
     console.log('Connecting to MongoDB...');
     await connectDB(env.MONGODB_URI);
     console.log('MongoDB connected successfully.');
+
+    // Ensure database indexes match declared schema indexes exactly
+    console.log('Syncing database indexes...');
+    await Promise.all([User, Note, Post].map((m) => m.syncIndexes()));
+    console.log('Indexes synced successfully.');
 
     server = app.listen(env.PORT, () => {
       console.log(`Server listening on port ${env.PORT} [${env.NODE_ENV}]`);
