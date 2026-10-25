@@ -6,8 +6,8 @@ A production-grade, secure REST API engineered for a multi-tenant Note-Taking pl
 
 *Note: The API is hosted on Render's free tier. Cold starts take approximately 30 to 60 seconds on initial wake-up.*
 
-* **Live Frontend URL**: *Pending deployment (Phase 10)*
-* **Live Backend API URL**: *Pending deployment (Phase 10)*
+* **Live Frontend URL**: [https://notes-web-omega.vercel.app](https://notes-web-omega.vercel.app)
+* **Live Backend API URL**: [https://notes-api-service.onrender.com](https://notes-api-service.onrender.com)
 
 ---
 
